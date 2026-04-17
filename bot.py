@@ -2,46 +2,36 @@ import os
 from flask import Flask
 from threading import Thread
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
-from telegram.ext import Updater, CommandHandler, CallbackQueryHandler
+from telegram.ext import Updater, CommandHandler, CallbackQueryHandler, MessageHandler, Filters
 
-# --- إعداد السيرفر ---
 app = Flask('')
 @app.route('/')
 def home(): return "Bot is Online!"
 def run(): app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 8080)))
 def keep_alive(): Thread(target=run).start()
 
-# --- بياناتك اللي بعتها ---
+# --- إعداداتك ---
 TOKEN = "8558249602:AAG8Snts-MGowIJPFRiok9W3XD7DPujlWMQ"
-MY_ID = 8597163674
-SHIFT_PRICE = 27
-VACATION_DEDUCTION = 54
+ADMIN_ID = 8597163674
+GROUP_ID = 0 # سيبه صفر دلوقتي لحد ما تجيب الرقم
+
+def get_group_id(update, context):
+    # أمر مخصص عشان يظهرلك أيدي المجموعة
+    chat_id = update.effective_chat.id
+    update.message.reply_text(f"✅ أيدي هذه الدردشة هو:\n`{chat_id}`", parse_mode='Markdown')
 
 def start(update, context):
-    if update.message.from_user.id != MY_ID:
-        update.message.reply_text("عذراً، هذا البوت خاص بحازم فقط.")
-        return
-    keyboard = [
-        [InlineKeyboardButton("تسجيل شفت (27ج)", callback_data='shift')],
-        [InlineKeyboardButton("تسجيل إجازة (-54ج)", callback_data='vacation')]
-    ]
-    update.message.reply_text('يا حازم، سجل عملياتك اليومية:', reply_markup=InlineKeyboardMarkup(keyboard))
-
-def button(update, context):
-    query = update.callback_query
-    query.answer()
-    if query.from_user.id != MY_ID: return
-    
-    res = f"✅ تم تسجيل الشفت بنجاح (+{SHIFT_PRICE}ج)" if query.data == 'shift' else f"❌ تم تسجيل إجازة (-{VACATION_DEDUCTION}ج)"
-    query.edit_message_text(text=res)
+    # كود البداية والأسئلة (اللي عملناه قبل كدة)
+    update.message.reply_text("البوت شغال! لو أنت في المجموعة ابعت /get_id")
 
 def main():
     updater = Updater(TOKEN, use_context=True)
-    updater.dispatcher.add_handler(CommandHandler("start", start))
-    updater.dispatcher.add_handler(CallbackQueryHandler(button))
+    dp = updater.dispatcher
+    dp.add_handler(CommandHandler("get_id", get_group_id))
+    dp.add_handler(CommandHandler("start", start))
+    
     keep_alive()
     updater.start_polling()
     updater.idle()
 
-if __name__ == '__main__':
-    main()
+if __name__ == '__main__': main()
